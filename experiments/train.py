@@ -189,7 +189,7 @@ def mytest_model(arglist, actors_cur, num_test_episode):
                 episode_outRange[-1] += 1
 
             episode_step += 1
-            terminal = (episode_step >= arglist.max_episode_len) or all(done_n)
+            terminal = (episode_step >= arglist.max_step_len) or all(done_n)
             if terminal:
                 episode_outRange[-1] /= episode_step
                 episode_outRange.append(0)
@@ -201,7 +201,7 @@ def mytest_model(arglist, actors_cur, num_test_episode):
                 if env.world.coverage_rate == 1.0:
                     done_steps.append(episode_step)
                 else:
-                    done_steps.append(arglist.max_episode_len)
+                    done_steps.append(arglist.max_step_len)
                 obs_n = env.reset()
                 break
 
@@ -291,8 +291,8 @@ def train(arglist):
                 f.write(output + '\n')
 
         game_step_cur = 0
-        # 开始循环
-        for episode_cnt in range(arglist.max_episode_len):
+        # 开始一局游戏的循环
+        for episode_cnt in range(arglist.max_step_len):
             # get action  选择动作
             action_n = [agent(torch.from_numpy(obs).to(arglist.device, torch.float)).detach().cpu().numpy()
                         for agent, obs in zip(actors_cur, obs_n)]
@@ -309,7 +309,9 @@ def train(arglist):
                 arglist, game_step, update_cnt, memory, obs_size, action_size,
                 actors_cur, actors_tar, critics_cur, critics_tar, optimizers_a, optimizers_c)
 
-            env.render2()
+            if episode_gone % 100 == 0:
+                # 每100轮且100轮的每10步才render一次
+                env.render2()
             time.sleep(0.1)
 
             # update the obs_n
@@ -322,7 +324,7 @@ def train(arglist):
                 episode_outRange[-1] += 1
 
             done = all(done_n)
-            terminal = (episode_cnt >= arglist.max_episode_len - 1)
+            terminal = (episode_cnt >= arglist.max_step_len - 1)
             cov = env.world.coverage_rate
             if done or terminal:
                 episode_outRange[-1] /= game_step_cur
@@ -334,7 +336,7 @@ def train(arglist):
                 if cov == 1.0:
                     modify_done_steps.append(game_step_cur)
                 else:
-                    modify_done_steps.append(arglist.max_episode_len)
+                    modify_done_steps.append(arglist.max_step_len)
                 done_steps.append(game_step_cur)
                 obs_n = env.reset()
                 for a_r in agent_rewards:

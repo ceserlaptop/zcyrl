@@ -29,7 +29,8 @@ except ImportError as e:
 import math
 import numpy as np
 
-RAD2DEG = 57.29577951308232
+# RAD2DEG = 57.29577951308232
+RAD2DEG = 1
 
 
 def get_display(spec):

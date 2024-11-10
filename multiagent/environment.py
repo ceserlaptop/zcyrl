@@ -252,7 +252,6 @@ class MultiAgentEnv(gym.Env):
                 self.viewers[i] = rendering.Viewer(700, 700)
             else:
                 pass
-
         self.render_geoms = None
         # create rendering geometry创造render的显存
         if self.render_geoms is None:
@@ -266,6 +265,8 @@ class MultiAgentEnv(gym.Env):
                 xform = rendering.Transform()
                 if 'agent' in entity.name:
                     geom.set_color(*entity.color, alpha=0.5)
+                elif "obstacle" in entity.name:
+                    geom.set_color(0, 1, 0)
                 else:
                     geom.set_color(*entity.color)
                 geom.add_attr(xform)
@@ -275,16 +276,17 @@ class MultiAgentEnv(gym.Env):
             for agent in self.world.agents:
                 geom_cover = rendering.make_conical(agent.r_cover, np.radians(agent.angle_cover))  # 画扇形
                 xform = rendering.Transform()
-                geom_cover.set_color(*agent.cover_color, alpha=0.3)
+                geom_cover.set_color(*agent.cover_color, alpha=0.15)
                 geom_cover.add_attr(xform)
                 self.render_geoms.append(geom_cover)
                 self.render_geoms_xform.append(xform)
             # 3. 绘制智能体的扇形遮挡区域
             for agent in self.world.agents:
+                agent.view_vertices = None
                 agent.update_boundary_vertices(self.world.obstacles)
                 geom_view = rendering.make_polygon(agent.view_vertices, filled=True)
                 xform = rendering.Transform()
-                geom_view.set_color(0.6, 0.6, 0.0, 0.25)
+                geom_view.set_color(0.6, 0.6, 0.0, 0.5)
                 geom_view.add_attr(xform)
                 self.render_geoms.append(geom_view)
                 self.render_geoms_xform.append(xform)
@@ -298,7 +300,9 @@ class MultiAgentEnv(gym.Env):
         # 新增代码, 显示目标点的覆盖进度
         for geom, entity in zip(self.render_geoms, self.world.entities):
             if 'agent' in entity.name:
-                geom.set_color(*entity.color, alpha=0.3)
+                geom.set_color(*entity.color, alpha=0.5)
+            elif "obstacle" in entity.name:
+                geom.set_color(0.5, 0.16, 0.16)
             else:
                 geom.set_color(*entity.color)
 
@@ -316,18 +320,32 @@ class MultiAgentEnv(gym.Env):
             # 1 绘制实体的位置
             for e, entity in enumerate(self.world.entities):
                 self.render_geoms_xform[e].set_translation(*entity.state.p_pos)
+
             # 2. 绘制智能体的扇形覆盖区域
             for e, agent in enumerate(self.agents):
+                if agent.name == "agent_0":
+                    print("智能体角度为:", agent.state.p_angle)
+                    print("智能体位置为:", agent.state.p_pos)
+                    # print("结果为", agent.state.p_angle - agent.last_angle)
+
                 self.render_geoms_xform[e + len(self.world.entities)].set_translation(agent.state.p_pos[0],
                                                                                       agent.state.p_pos[1])
-                self.render_geoms_xform[e + len(self.world.entities)].set_rotation(agent.state.p_angle)
+                self.render_geoms_xform[e + len(self.world.entities)].set_rotation(
+                    agent.state.p_angle)  # 注意这里使用角度值,不用弧度值
 
             # 3. 绘制智能体的覆盖遮挡区域
-            for e, agent in enumerate(self.agents):
-                self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_translation(
-                    agent.state.p_pos[0], agent.state.p_pos[1])
-                self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_rotation(
-                    agent.state.p_angle)
+            # for e, agent in enumerate(self.agents):
+            # self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_translation(
+            #     agent.state.p_pos[0], agent.state.p_pos[1])
+            # self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_rotation(
+            #     agent.state.p_angle)
+            # self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_translation(
+            #     0, 0)
+            # self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_rotation(
+            #       0)
+            # print("结果为", agent.state.p_angle - agent.last_angle)
+            # self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_translation(
+            #     agent.state.p_pos[0], agent.state.p_pos[1])
 
             # # 绘制通信链路
             # for a, ag_a in enumerate(self.agents):
@@ -357,7 +375,6 @@ class MultiAgentEnv(gym.Env):
             results.append(self.viewers[i].render(return_rgb_array=(mode == 'rgb_array')))
 
         return results
-
 
     # render environment
     def render(self, mode='human'):
@@ -398,6 +415,7 @@ class MultiAgentEnv(gym.Env):
                 if 'agent' in entity.name:
                     geom.set_color(*entity.color, alpha=0.5)
                 else:
+                    # geom.set_color(1, 1, 0)
                     geom.set_color(*entity.color)
                 geom.add_attr(xform)
                 self.render_geoms.append(geom)
@@ -453,12 +471,12 @@ class MultiAgentEnv(gym.Env):
                 self.render_geoms_xform[e + len(self.world.entities)].set_translation(agent.state.p_pos[0],
                                                                                       agent.state.p_pos[1])
                 self.render_geoms_xform[e + len(self.world.entities)].set_rotation(agent.state.p_angle)
-
             # 3. 绘制智能体的覆盖遮挡区域
             for e, agent in enumerate(self.agents):
                 self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_translation(
                     agent.state.p_pos[0], agent.state.p_pos[1])
-                self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_rotation(agent.state.p_angle)
+                self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_rotation(
+                    agent.state.p_angle)
 
             # # 绘制通信链路
             # for a, ag_a in enumerate(self.agents):
@@ -479,7 +497,6 @@ class MultiAgentEnv(gym.Env):
             #     polygon.set_color(0.6, 0.6, 0.0, 0.25)
             #     # polygon.set_color(1.0, 0.0, 0.0, 0.0)
             #     self.viewers[i].add_onetime(polygon)
-
 
             # # # 障碍物
             # for obstacle in self.world.obstacle:
@@ -566,7 +583,6 @@ class BatchMultiAgentEnv(gym.Env):
         for env in self.env_batch:
             results_n += env.render(mode, close)
         return results_n
-
 
 # def eva_cost(R_pos, head_angle, T_pos):
 #     head_angle = np.radians(head_angle)

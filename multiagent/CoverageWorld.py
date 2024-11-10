@@ -73,12 +73,13 @@ class CoverageWorld(World):
             # 对角速度进行限幅
             if entity.max_angle_speed is not None and np.abs(entity.state.p_vel[1]) > entity.max_angle_speed:
                 entity.state.p_vel[1] = entity.state.p_vel[1] / np.abs(entity.state.p_vel[1]) * entity.max_angle_speed
+            # print("角速度限幅", entity.max_angle_speed)
             # 位姿更新
             entity.state.p_angle += entity.state.p_vel[1] * self.dt
             entity.state.p_angle = normalize_angle(entity.state.p_angle)  # 角度变换，角度变成弧度，将角度限制在0-2*pi
             entity.state.p_pos[0] += entity.state.p_vel[0] * math.cos(entity.state.p_angle) * self.dt
             entity.state.p_pos[1] += entity.state.p_vel[0] * math.sin(entity.state.p_angle) * self.dt
-            # entity.update_boundary_vertices(self.obstacles)
+
 
     def update_energy(self):
         num_done = 0

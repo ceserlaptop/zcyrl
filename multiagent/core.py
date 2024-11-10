@@ -59,6 +59,7 @@ class Entity(object):
         self.state = EntityState()
         # mass
         self.initial_mass = 1.0
+        self.last_angle = None
 
     @property
     def mass(self):
@@ -148,7 +149,7 @@ class Agent(Entity):
         self.sight_range_func = None
         self.sight_range_outer_func = None
         self.obstacles = set()
-
+        self.last_angle = None
 
     def sight_range_at(self, angle, outer=False):
         angle = normalize_angle(angle)
@@ -158,8 +159,11 @@ class Agent(Entity):
 
     def boundary_between(self, outer=False):
         # 计算出当前覆盖的左右边界角度
+        # print("角度:", self.state.p_angle, "\n")
         angle_left = normalize_angle(self.state.p_angle - self.angle_cover / 2.0)
+        # angle_left = normalize_angle(self.state.p_angle)
         angle_right = angle_left + self.angle_cover
+        # print("左角度:", angle_left, "右角度:", angle_right, "正角度:", self.state.p_angle, "覆盖角度:", self.angle_cover, "\n")
 
         if outer:  # 默认false
             phis_all = self.sight_range_outer_func.x
@@ -169,22 +173,33 @@ class Agent(Entity):
             rhos_all = self.sight_range_func.y
 
         # 通过下面的操作，得到在智能体视野范围内的向量角度（phis）和长度（rhos）
-        if angle_right <= +180.0:
+        # if angle_right <= +180.0:
+        if angle_right <= +180.0 and angle_left >= -180.0:
             # 输出是否同时满足两个命题的布尔值，得到在angle_left和angle_right之间的布尔值排列
             mask = np.logical_and(angle_left < phis_all, phis_all < angle_right)
             phis = phis_all[mask]
             rhos = rhos_all[mask]
         else:
+            # if angle_right <= +180.0:
+            #     mask1 = np.logical_and(angle_left < phis_all, phis_all <= +180.0)
+            #     mask2 = np.logical_and(phis_all > -180.0, phis_all < angle_right)
+            #     phis = np.concatenate([phis_all[mask1], phis_all[mask2]])
+            #     rhos = np.concatenate([rhos_all[mask1], rhos_all[mask2]])
+            # elif angle_left >= -180.0:
+            #     mask1 = np.logical_and(angle_left < phis_all, phis_all <= 0.0)
+            #     mask2 = np.logical_and(phis_all > -180.0, phis_all < angle_right - 360.0)
+            #     phis = np.concatenate([phis_all[mask1], phis_all[mask2]])
+            #     rhos = np.concatenate([rhos_all[mask1], rhos_all[mask2]])
+
             mask1 = np.logical_and(angle_left < phis_all, phis_all <= +180.0)
             mask2 = np.logical_and(phis_all > -180.0, phis_all < angle_right - 360.0)
             phis = np.concatenate([phis_all[mask1], phis_all[mask2]])
             rhos = np.concatenate([rhos_all[mask1], rhos_all[mask2]])
-
         phis = np.concatenate([[angle_left], phis, [angle_right]])
         rhos = np.concatenate(
             [[self.sight_range_at(angle_left)], rhos, [self.sight_range_at(angle_right)]]
         )
-
+        # print("角度", phis)
         return phis.astype(np.float64), rhos.astype(np.float64)
 
     def add_obstacle(self, env_obstacles):
@@ -290,12 +305,19 @@ class Agent(Entity):
         self.clear_obstacles()
         self.add_obstacle(env_obstacle)
         phis, rhos = self.boundary_between()
-
         # 去除在圆心覆盖域外的边界点
         rhos = rhos.clip(min=self.size, max=self.r_cover)
+        # if self.name == "agent_0":
+        #     # print("角度数据", phis, "距离数据", rhos, "\n")
+        #     print("当前角度:", self.state.p_angle, "\n")
+        # phi_rad = np.deg2rad(phis)
+        # vertices = rhos * np.array([np.cos(phi_rad), np.sin(phi_rad)])
+        # print(vertices)
         vertices = polar2cartesian(rhos, phis).transpose()
         #  表示所有的边界点
+        # print(vertices)
         vertices = self.state.p_pos + np.concatenate([[[0.0, 0.0]], vertices, [[0.0, 0.0]]])
+        # vertices = np.concatenate([[[0.0, 0.0]], vertices, [[0.0, 0.0]]])
         self.view_vertices = vertices
 
 
