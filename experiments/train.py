@@ -33,8 +33,8 @@ def make_env(scenario_name, arglist):
     """
     create the environment from script
     """
-    scenario = scenarios.load(scenario_name + ".py").Scenario(angle_cover=120, r_cover=0.3, r_comm=0.4,
-                                                              comm_r_scale=0.9, comm_force_scale=5.0)
+    scenario = scenarios.load(scenario_name + ".py").Scenario(angle_cover=120, r_cover=0.8, r_comm=0.4,
+                                                              comm_r_scale=0.9, comm_force_scale=5.0, arglist=arglist)
     world = scenario.make_world()
     if arglist.benchmark:
         env = MultiAgentEnv(world, scenario.reset_world, scenario.reward, scenario.observation, scenario.benchmark_data)
@@ -299,6 +299,7 @@ def train(arglist):
             # interact with env
             obs_n_t, rew_n, done_n = env.step(action_n)
 
+
             # save the experience
             memory.add(obs_n, np.concatenate(action_n), rew_n, obs_n_t, done_n)
             for i, rew in enumerate(rew_n):
@@ -309,7 +310,7 @@ def train(arglist):
                 arglist, game_step, update_cnt, memory, obs_size, action_size,
                 actors_cur, actors_tar, critics_cur, critics_tar, optimizers_a, optimizers_c)
 
-            if episode_gone % 100 == 0:
+            if episode_gone % 1 == 0:
                 # 每100轮且100轮的每10步才render一次
                 env.render2()
             time.sleep(0.1)

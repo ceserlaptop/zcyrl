@@ -80,6 +80,7 @@ class Landmark(Entity):
 class Obstacle(Entity):
     def __init__(self):
         super(Obstacle, self).__init__()
+        self.transmittance = None
 
     def obstruct(self, ray, keep_tangential=False, outer=False):
         relative = Vector2D(vector=self.state.p_pos - ray.origin)

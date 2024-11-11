@@ -1,6 +1,8 @@
 import math
+import time
 
 import numpy as np
+from experiments.utils import point_to_line_distance as ptld
 
 from experiments.poltVerticesTest import showVertices
 from experiments.utils import angle_diff, Vector2D, arcsin_deg, normalize_angle
@@ -80,7 +82,6 @@ class CoverageWorld(World):
             entity.state.p_pos[0] += entity.state.p_vel[0] * math.cos(entity.state.p_angle) * self.dt
             entity.state.p_pos[1] += entity.state.p_vel[0] * math.sin(entity.state.p_angle) * self.dt
 
-
     def update_energy(self):
         num_done = 0
         for poi in self.landmarks:
@@ -94,14 +95,32 @@ class CoverageWorld(World):
                                       poi.state.p_pos[0] - agent.state.p_pos[0])
                     beta = normalize_angle(np.degrees(beta))
                     delta = angle_diff(beta, agent.state.p_angle)
-                    # 如果小于覆盖半径且朝向角和目标方位角之差小于覆盖角度
+                    # 如果在覆盖范围之内，即小于覆盖半径且朝向角和目标方位角之差小于覆盖角度
                     if dist <= agent.r_cover and delta < agent.angle_cover / 2:
                         # 基于扇形感知的能量函数
                         c1 = max(0, agent.r_cover - dist)
-                        c2 = max(0, (agent.angle_cover / 2 - delta)*math.pi/180.0)
-                        c3 = max(0, (agent.angle_cover / 2 + delta)*math.pi/180.0)
-                        poi.consume += 20 * (c1 * c2 * c3) / (c1 * c2 + c1 * c3 + c2 * c3)
-
+                        c2 = max(0, (agent.angle_cover / 2 - delta) * math.pi / 180.0)
+                        c3 = max(0, (agent.angle_cover / 2 + delta) * math.pi / 180.0)
+                        consume = 20 * (c1 * c2 * c3) / (c1 * c2 + c1 * c3 + c2 * c3)
+                        # 判断是否被障碍物遮挡，考虑能量削减。还得考虑智能体不能在障碍物里面
+                        for obstacle in self.obstacles:
+                            # 如果障碍物透明
+                            if obstacle.transmittance >= 1:
+                                pass
+                            # 如果障碍物不透明
+                            else:
+                                # 计算距离并判断障碍物是否在两者中间
+                                obs_d, between_flag = ptld(agent.state.p_pos, poi.state.p_pos, obstacle.state.p_pos)
+                                # 判断智能体是否在障碍物外面
+                                out_flag = np.linalg.norm(agent.state.p_pos-obstacle.state.p_pos) > (agent.size+obstacle.size)
+                                if obs_d < obstacle.size and between_flag and out_flag:  # 目标点被障碍物挡住
+                                    occlusion_length = np.sqrt(np.square(obstacle.size) - np.square(obs_d))
+                                    un_occlusion_rate = 1 - occlusion_length / obstacle.size
+                                    consume = consume * un_occlusion_rate * obstacle.transmittance
+                                    # time.sleep(1)
+                                else:
+                                    pass
+                        poi.consume += consume
                 if poi.consume > 0.0:
                     # 限制覆蓋能量大小，最大為m_energy
                     poi.energy += poi.consume

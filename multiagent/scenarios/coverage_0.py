@@ -12,10 +12,12 @@ from multiagent.scenario import BaseScenario
 
 
 class Scenario(BaseScenario):
-    def __init__(self, angle_cover=120, r_cover=0.2, r_comm=0.4, comm_r_scale=0.9, comm_force_scale=5.0):
-        self.num_agents = 4
-        self.num_pois = 5
-        self.num_obstacle = 10
+    def __init__(self, angle_cover=120, r_cover=0.2, r_comm=0.4, comm_r_scale=0.9, comm_force_scale=5.0, arglist = None):
+        self.arglist = arglist
+        self.num_agents = 1
+        self.num_pois = arglist.poi_num
+        self.num_obstacle = arglist.obstacle_num
+        # self.num_obstacle = 10
         self.env_range = 1
         self.pos_agents = [[[x, x], [x, -x], [-x, -x], [-x, x]] for x in [0.45 * r_comm]][0]
 
@@ -35,6 +37,8 @@ class Scenario(BaseScenario):
 
         self.comm_r_scale = comm_r_scale  # r_comm * comm_force_scale = 计算聚合力时的通信半径
         self.comm_force_scale = comm_force_scale  # 连通保持聚合力的倍数
+
+        self.arglist = arglist
 
     def make_world(self):
         world = CoverageWorld(self.comm_r_scale, self.comm_force_scale)
@@ -85,7 +89,7 @@ class Scenario(BaseScenario):
 
         obstacle_pos = self.generate_obstacle()
         for i, obstacle in enumerate(world.obstacles):
-            obstacle.color = np.array([0, 0, 0])
+            obstacle.color = np.array([0.5, 0.16, 0.16])
             obstacle.size = obstacle_pos[i][2]
             obstacle.state.p_pos = obstacle_pos[i][0:2]
             obstacle.state.p_vel = np.zeros(world.dim_p)

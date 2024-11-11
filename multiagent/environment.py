@@ -28,6 +28,7 @@ class MultiAgentEnv(gym.Env):
         self.world = world
         self.agents = self.world.policy_agents
         self.landmarks = world.landmarks
+        self.obstacle = world.obstacles
         # set required vectorized gym env property
         self.n = len(world.policy_agents)
         # scenario callbacks
@@ -265,8 +266,8 @@ class MultiAgentEnv(gym.Env):
                 xform = rendering.Transform()
                 if 'agent' in entity.name:
                     geom.set_color(*entity.color, alpha=0.5)
-                elif "obstacle" in entity.name:
-                    geom.set_color(0, 1, 0)
+                # elif "obstacle" in entity.name:
+                #     geom.set_color(0, 1, 0)
                 else:
                     geom.set_color(*entity.color)
                 geom.add_attr(xform)
@@ -301,8 +302,8 @@ class MultiAgentEnv(gym.Env):
         for geom, entity in zip(self.render_geoms, self.world.entities):
             if 'agent' in entity.name:
                 geom.set_color(*entity.color, alpha=0.5)
-            elif "obstacle" in entity.name:
-                geom.set_color(0.5, 0.16, 0.16)
+            # elif "obstacle" in entity.name:
+            #     geom.set_color(0.5, 0.16, 0.16)
             else:
                 geom.set_color(*entity.color)
 
@@ -323,9 +324,9 @@ class MultiAgentEnv(gym.Env):
 
             # 2. 绘制智能体的扇形覆盖区域
             for e, agent in enumerate(self.agents):
-                if agent.name == "agent_0":
-                    print("智能体角度为:", agent.state.p_angle)
-                    print("智能体位置为:", agent.state.p_pos)
+                # if agent.name == "agent_0":
+                #     print("智能体角度为:", agent.state.p_angle)
+                #     print("智能体位置为:", agent.state.p_pos)
                     # print("结果为", agent.state.p_angle - agent.last_angle)
 
                 self.render_geoms_xform[e + len(self.world.entities)].set_translation(agent.state.p_pos[0],

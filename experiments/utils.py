@@ -11,7 +11,7 @@ def normalize_angle(angle):
 # environment
 def angle_diff(angle1, angle2):
     """Calculate the difference between two angles."""
-    return abs(normalize_angle(angle1-angle2))
+    return abs(normalize_angle(angle1 - angle2))
 
 
 # coverage_0
@@ -61,6 +61,31 @@ def arcsin_deg(x):
     """
 
     return np.rad2deg(np.arcsin(x))
+
+
+# CoverageWorld
+def point_to_line_distance(A, B, C):
+
+    x1, y1 = A
+    x2, y2 = B
+    x3, y3 = C
+
+    # 计算AB向量
+    AB = B - A
+    # 计算AC向量
+    AC = C - A
+
+    # 计算AC在AB上的投影点D
+    projection_length = np.dot(AC, AB) / np.dot(AB, AB)
+    D = A + projection_length * AB
+
+    # 计算C到D的距离
+    distance = np.linalg.norm(C - D)
+
+    # 判断投影点是否在AB线段上
+    in_plag = min(x1, x2) <= x3 <= max(x1, x2) and min(y1, y2) <= y3 <= max(y1, y2)
+
+    return distance, in_plag
 
 
 class Vector2D:  # pylint: disable=missing-function-docstring
