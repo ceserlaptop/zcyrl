@@ -14,7 +14,7 @@ from multiagent.scenario import BaseScenario
 class Scenario(BaseScenario):
     def __init__(self, angle_cover=120, r_cover=0.2, r_comm=0.4, comm_r_scale=0.9, comm_force_scale=5.0, arglist = None):
         self.arglist = arglist
-        self.num_agents = 1
+        self.num_agents = arglist.agent_num
         self.num_pois = arglist.poi_num
         self.num_obstacle = arglist.obstacle_num
         # self.num_obstacle = 10
@@ -52,7 +52,7 @@ class Scenario(BaseScenario):
             agent.collide = False  # 智能体之间不会发生碰撞
             agent.silent = True  # 能够进行通信
             agent.size = self.size
-            agent.r_cover = self.r_cover
+            agent.r_cover = self.arglist.agent_r_cover
             agent.r_comm = self.r_comm
             agent.angle_cover = self.angle_cover
             agent.max_speed = self.max_speed
@@ -68,7 +68,7 @@ class Scenario(BaseScenario):
             landmark.label = -1
         for i, obstacle in enumerate(world.obstacles):
             obstacle.name = "obstacle_%d" % i
-            obstacle.transmittance = 0
+            obstacle.transmittance = self.arglist.transmittance
             obstacle.collide = False
             obstacle.movable = False
             obstacle.size = self.size
@@ -178,7 +178,9 @@ class Scenario(BaseScenario):
             flag = True
             # 产生随机的位置和大小
             pos = np.random.uniform(-self.env_range * 0.88, self.env_range * 0.88, (self.num_obstacle, 2))
-            size = np.random.uniform(self.env_range * 0.02, self.env_range * 0.1, (self.num_obstacle, 1))
+            size = np.random.uniform(self.env_range * self.arglist.obstacle_size_small, self.env_range *
+                                     self.arglist.obstacle_size_large, (self.num_obstacle, 1))
+            # size = np.random.uniform(self.env_range * 0.08, self.env_range * 0.2, (self.num_obstacle, 1))
             # 验证产生的随机位置和大小是否满足条件:任意两个障碍物不重叠
             for i in range(self.num_obstacle):
                 for j in range(i + 1, self.num_obstacle):

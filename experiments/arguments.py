@@ -20,8 +20,15 @@ def parse_args():
     parser.add_argument("--max_episode", type=int, default=1000, help="maximum episode length")
     parser.add_argument("--num-adversaries", type=int, default=0, help="number of adversaries")
 
-    parser.add_argument("--obstacle_num", type=int, default=15, help="number of obstacle")
-    parser.add_argument("--poi_num", type=int, default=8, help="number of pois")
+    parser.add_argument("--transmittance", type=float, default=0.0, help="obstacle transmittance,"
+                                                                         "在这里设置是对所有障碍物统一进行设置")
+    parser.add_argument("--agent_r_cover", type=float, default=0.5, help="覆盖半径")
+    parser.add_argument("--obstacle_size_small", type=float, default=0.02, help="obstacle size of small")
+    parser.add_argument("--obstacle_size_large", type=float, default=0.1, help="obstacle size of large")
+    parser.add_argument("--agent_num", type=int, default=4, help="number of agent")
+    parser.add_argument("--obstacle_num", type=int, default=10, help="number of obstacle")
+    parser.add_argument("--poi_num", type=int, default=5, help="number of pois")
+
     # core training parameters
     parser.add_argument("--device", default=device, help="torch device ")
     parser.add_argument("--safe_control", type=bool, default=True, help="adopt the CBF ")
@@ -39,7 +46,8 @@ def parse_args():
     parser.add_argument("--num_units_openai", type=int, default=128, help="number of units in the mlp")
 
     # checkpointing;
-    parser.add_argument("--fre_save_model", type=int, default=500, help="the number of the episode for saving the model")
+    parser.add_argument("--fre_save_model", type=int, default=500,
+                        help="the number of the episode for saving the model")
     parser.add_argument("--save_dir", type=str, default="models", help="directory in which training state and model \
     should be saved")
     parser.add_argument("--old_model_name", type=str,
@@ -54,7 +62,7 @@ def parse_args():
     parser.add_argument("--benchmark", action="store_true", default=False)
     parser.add_argument("--benchmark-iters", type=int, default=10000, help="number of iterations run for benchmarking")
     parser.add_argument("--benchmark-dir", type=str, default="./benchmark_files/", \
-            help="directory where benchmark data is saved")
+                        help="directory where benchmark data is saved")
     parser.add_argument("--plots-dir", type=str, default="./learning_curves/", \
-            help="directory where plot data is saved")
+                        help="directory where plot data is saved")
     return parser.parse_args()

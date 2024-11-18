@@ -107,22 +107,26 @@ class CoverageWorld(World):
                             # 如果障碍物透明
                             if obstacle.transmittance >= 1:
                                 pass
-                            # 如果障碍物不透明
+                            # 如果障碍物不透明，修正累积的能量
                             else:
                                 # 计算距离并判断障碍物是否在两者中间
                                 obs_d, between_flag = ptld(agent.state.p_pos, poi.state.p_pos, obstacle.state.p_pos)
                                 # 判断智能体是否在障碍物外面
                                 out_flag = np.linalg.norm(agent.state.p_pos-obstacle.state.p_pos) > (agent.size+obstacle.size)
                                 if obs_d < obstacle.size and between_flag and out_flag:  # 目标点被障碍物挡住
+                                    # 计算遮挡长度
                                     occlusion_length = np.sqrt(np.square(obstacle.size) - np.square(obs_d))
+                                    # 遮挡长度和障碍物半径之比，来计算遮挡比例
                                     un_occlusion_rate = 1 - occlusion_length / obstacle.size
+                                    # 通过透过率和遮挡比来计算能量
                                     consume = consume * un_occlusion_rate * obstacle.transmittance
-                                    # time.sleep(1)
-                                else:
+                                elif not out_flag:  # 智能体在障碍物里面（出错）,不累计能量无奖励
+                                    consume = 0
+                                else:  # 障碍物不在两者间，则不考虑遮挡
                                     pass
                         poi.consume += consume
                 if poi.consume > 0.0:
-                    # 限制覆蓋能量大小，最大為m_energy
+                    # 限制覆盖能量大小，最大为m_energy
                     poi.energy += poi.consume
                     if poi.energy > poi.m_energy:
                         poi.consume -= poi.energy - poi.m_energy

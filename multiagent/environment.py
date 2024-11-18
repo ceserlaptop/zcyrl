@@ -324,19 +324,13 @@ class MultiAgentEnv(gym.Env):
 
             # 2. 绘制智能体的扇形覆盖区域
             for e, agent in enumerate(self.agents):
-                # if agent.name == "agent_0":
-                #     print("智能体角度为:", agent.state.p_angle)
-                #     print("智能体位置为:", agent.state.p_pos)
-                    # print("结果为", agent.state.p_angle - agent.last_angle)
-
                 self.render_geoms_xform[e + len(self.world.entities)].set_translation(agent.state.p_pos[0],
                                                                                       agent.state.p_pos[1])
                 self.render_geoms_xform[e + len(self.world.entities)].set_rotation(
                     agent.state.p_angle)  # 注意这里使用角度值,不用弧度值
-
-            # 3. 绘制智能体的覆盖遮挡区域
-            # for e, agent in enumerate(self.agents):
-            # self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_translation(
+            # 3. 绘制智能体的t覆盖遮挡区域
+            #             # for e, agent in enumerate(self.agents):
+            #             # self.render_geoms_xform[e + len(self.world.entiies) + len(self.agents)].set_translation(
             #     agent.state.p_pos[0], agent.state.p_pos[1])
             # self.render_geoms_xform[e + len(self.world.entities) + len(self.agents)].set_rotation(
             #     agent.state.p_angle)

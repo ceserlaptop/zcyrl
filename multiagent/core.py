@@ -151,6 +151,7 @@ class Agent(Entity):
         self.sight_range_outer_func = None
         self.obstacles = set()
         self.last_angle = None
+        self.angle_interval = [[-180, +180, 0.8]]
 
     def sight_range_at(self, angle, outer=False):
         angle = normalize_angle(angle)
@@ -181,17 +182,6 @@ class Agent(Entity):
             phis = phis_all[mask]
             rhos = rhos_all[mask]
         else:
-            # if angle_right <= +180.0:
-            #     mask1 = np.logical_and(angle_left < phis_all, phis_all <= +180.0)
-            #     mask2 = np.logical_and(phis_all > -180.0, phis_all < angle_right)
-            #     phis = np.concatenate([phis_all[mask1], phis_all[mask2]])
-            #     rhos = np.concatenate([rhos_all[mask1], rhos_all[mask2]])
-            # elif angle_left >= -180.0:
-            #     mask1 = np.logical_and(angle_left < phis_all, phis_all <= 0.0)
-            #     mask2 = np.logical_and(phis_all > -180.0, phis_all < angle_right - 360.0)
-            #     phis = np.concatenate([phis_all[mask1], phis_all[mask2]])
-            #     rhos = np.concatenate([rhos_all[mask1], rhos_all[mask2]])
-
             mask1 = np.logical_and(angle_left < phis_all, phis_all <= +180.0)
             mask2 = np.logical_and(phis_all > -180.0, phis_all < angle_right - 360.0)
             phis = np.concatenate([phis_all[mask1], phis_all[mask2]])
@@ -203,17 +193,68 @@ class Agent(Entity):
         # print("角度", phis)
         return phis.astype(np.float64), rhos.astype(np.float64)
 
+    def get_norm(self, angle):
+        rho = None
+        if self.angle_interval is not None:
+            for interval in self.angle_interval:
+                if interval[0] <= angle <= interval[1]:
+                    rho = interval[2]
+                else:
+                    pass
+            if rho is None:
+                print("代码错误，请检查core.py中的get_norm代码")
+        else:
+            pass
+        return rho
+
+    def update_angle_interval(self, left, right, rho):
+        for interval in self.angle_interval:
+
+            # 第一种情况夹在中间
+            if (interval[0] < left) and (right < interval[1]):  # 夹在中间
+                max_rho = min(interval[2], rho)
+                self.angle_interval.append([left, right, max_rho])  # 加入当前区间
+                self.angle_interval.append([interval[0], left, interval[2]])  # 修改原来的区间
+                self.angle_interval.append([right, interval[1], interval[2]])
+                self.angle_interval.remove(interval)
+            # 第二种情况，包含原来的区间
+            elif (left < interval[0]) and (interval[1] < right):
+                self.angle_interval.append([left, interval[0], rho])
+                self.angle_interval.append([interval[1], right, rho])
+                max_rho = min(interval[2], rho)
+                self.angle_interval.append([interval[0], interval[1], max_rho])
+                self.angle_interval.remove(interval)
+
+            # 第三种情况
+            elif (left < interval[0]) and (right < interval[1]):
+                self.angle_interval.append([left, interval[0], rho])
+                max_rho = min(interval[2], rho)
+                self.angle_interval.append([interval[0], right, max_rho])
+                self.angle_interval.append([right, interval[1], interval[2]])
+                self.angle_interval.remove(interval)
+
+            # 第四种情况
+            elif (left > interval[0]) and (right > interval[1]):
+                self.angle_interval.append([interval[0], left, interval[2]])
+                self.angle_interval.append([interval[1], right, rho])
+                max_rho = min(interval[2], rho)
+                self.angle_interval.append([left, interval[1], max_rho])
+
+            else:
+                self.angle_interval.append([left, right, rho])
+                print("加入新的区间")
+
     def add_obstacle(self, env_obstacles):
         # 过滤障碍物，保留在智能体覆盖域中的障碍物
         obstacles = set(
             filter(
-                lambda x: np.linalg.norm(self.state.p_pos - x.state.p_pos) < self.r_cover + x.size,
-                filter(lambda obstacle: obstacle is not self, env_obstacles),
+                lambda x: np.linalg.norm(self.state.p_pos - x.state.p_pos) < self.r_cover + x.size, env_obstacles
+                # filter(lambda obstacle: obstacle is not self, env_obstacles),
             )
         )
         # self.obstacles.update(obstacles)
         # boundary = self.boundary
-
+        angle_interval = []
         boundary = [
             # 向量的长度（距离），角度（弧度制），原点，角度从-180到+180，每隔一度一个向量
             Vector2D(norm=self.r_cover, angle=angle, origin=self.state.p_pos)
@@ -240,6 +281,9 @@ class Agent(Entity):
             # 覆盖角度范围（左和右）
             angle_left = relative.angle - half_opening_angle
             angle_right = relative.angle + half_opening_angle
+
+            # self.update_angle_interval(angle_left, angle_right, max_rho)
+
             # 把值添加进去
             boundary.extend(
                 [
@@ -256,16 +300,17 @@ class Agent(Entity):
                         norm=self.r_cover, angle=angle_right + 0.01, origin=self.state.p_pos
                     ),
                 ]
-                + [
-                    Vector2D(norm=max_rho, angle=angle, origin=self.state.p_pos)
-                    for angle in np.linspace(
+
+                + [Vector2D(norm=max_rho, angle=angle, origin=self.state.p_pos)
+                   for angle in np.linspace(
                         angle_left,
                         angle_right,
                         num=max(16, int(2 * half_opening_angle)) + 1,
                         endpoint=True,
                     )
-                ]
+                   ]
             )
+            # 修改重复区域的长度
 
             self.boundary = [obstacle.obstruct(b) for b in boundary]
 
@@ -308,15 +353,8 @@ class Agent(Entity):
         phis, rhos = self.boundary_between()
         # 去除在圆心覆盖域外的边界点
         rhos = rhos.clip(min=self.size, max=self.r_cover)
-        # if self.name == "agent_0":
-        #     # print("角度数据", phis, "距离数据", rhos, "\n")
-        #     print("当前角度:", self.state.p_angle, "\n")
-        # phi_rad = np.deg2rad(phis)
-        # vertices = rhos * np.array([np.cos(phi_rad), np.sin(phi_rad)])
-        # print(vertices)
         vertices = polar2cartesian(rhos, phis).transpose()
         #  表示所有的边界点
-        # print(vertices)
         vertices = self.state.p_pos + np.concatenate([[[0.0, 0.0]], vertices, [[0.0, 0.0]]])
         # vertices = np.concatenate([[[0.0, 0.0]], vertices, [[0.0, 0.0]]])
         self.view_vertices = vertices

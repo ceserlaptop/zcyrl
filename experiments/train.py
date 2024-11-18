@@ -299,7 +299,6 @@ def train(arglist):
             # interact with env
             obs_n_t, rew_n, done_n = env.step(action_n)
 
-
             # save the experience
             memory.add(obs_n, np.concatenate(action_n), rew_n, obs_n_t, done_n)
             for i, rew in enumerate(rew_n):
